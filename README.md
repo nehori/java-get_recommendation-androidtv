@@ -7,7 +7,6 @@ More information please contact ([developer.android.com][1]).
 
 ## ScreenShot
 
-![Image](https://raw.githubusercontent.com/nehori/java-get_recommendation-androidtv/master/screenshot/1.png)
 ![Image](https://raw.githubusercontent.com/nehori/java-get_recommendation-androidtv/master/screenshot/2.png)
 
 ## Note
