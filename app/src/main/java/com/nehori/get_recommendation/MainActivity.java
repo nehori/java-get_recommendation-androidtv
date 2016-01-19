@@ -2,10 +2,13 @@ package com.nehori.get_recommendation;
 
 import java.util.ArrayList;
 
+import android.content.res.Resources;
+import android.graphics.Bitmap;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.content.pm.PackageManager;
 
+import android.graphics.drawable.BitmapDrawable;
 import android.app.Notification;
 import android.os.Bundle;
 import android.os.Handler;
@@ -16,11 +19,20 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 
+import android.content.res.TypedArray;
+import android.os.Bundle;
+import android.util.DisplayMetrics;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
     private static final int EVENT_LIST_CURRENT_NOS = 1;
     private boolean isEnabled = false;
+
+    private static final float INITIAL_ITEMS_COUNT = 3.5F;
+    private LinearLayout mCarouselContainer;
 
     private Handler mHandler = new Handler() {
         @Override
@@ -41,6 +53,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Util.writeNotificationListenerSetting(this);
+        // Get reference to carousel container
+        mCarouselContainer = (LinearLayout) findViewById(R.id.carousel);
     }
 
     @Override
@@ -48,17 +62,7 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         isEnabled = Util.isEnabled(this);
         Log.i(TAG, Here.at() + "isEnabled = " + isEnabled);
-    }
-
-    public void buttonOnClicked(View view) {
-        switch (view.getId()) {
-            case R.id.btnListNotify:
-                Log.i(TAG, Here.at() + "List recommendation...");
-                listCurrentNotification();
-                break;
-            default:
-                break;
-        }
+        listCurrentNotification();
     }
 
     private CharSequence setNotificationText(StatusBarNotification sbn, int i) {
@@ -94,6 +98,37 @@ public class MainActivity extends AppCompatActivity {
         return infoText + " : " + title;
     }
 
+    protected void setNotificationImage(StatusBarNotification sbn) {
+        Resources resources;
+        try {
+            resources = this.getPackageManager().getResourcesForApplication(sbn.getPackageName());
+        } catch (android.content.pm.PackageManager.NameNotFoundException namenotfoundexception) {
+            return;
+        } catch (android.content.res.Resources.NotFoundException notfoundexception) {
+            return;
+        }
+        Notification notification = sbn.getNotification();
+        if (notification.largeIcon == null) {
+            Log.e(TAG, Here.at() + "notification.largeIcon == null");
+            return;
+        }
+        BitmapDrawable bitmapdrawable = new BitmapDrawable(resources, notification.largeIcon);
+        int i = bitmapdrawable.getIntrinsicWidth();
+        int j = bitmapdrawable.getIntrinsicHeight();
+        if(sbn.getNotification().extras != null) {
+            i = sbn.getNotification().extras.getInt("notif_img_width", -1);
+            j = sbn.getNotification().extras.getInt("notif_img_height", -1);
+            Log.d(TAG, Here.at() + "width = " + i + " height = " + j);
+        }
+        ImageView imageItem = new ImageView(this);
+        imageItem.setBackgroundResource(R.drawable.shadow);
+        imageItem.setImageBitmap(Bitmap.createScaledBitmap(bitmapdrawable.getBitmap(), 250, 250, false));
+        imageItem.setLayoutParams(new LinearLayout.LayoutParams(250, 250));
+        /// Add image view to the carousel container
+        mCarouselContainer.addView(imageItem);
+        return;
+    }
+
     private void getCurrentNotificationContent() {
         ArrayList<String> appList = new ArrayList<>();
 
@@ -103,13 +138,10 @@ public class MainActivity extends AppCompatActivity {
             for (int i = 0; i < currentNos.length; i++) {
                     CharSequence charsequence = setNotificationText(currentNos[i], i);
                     if (charsequence != null) {
-                          appList.add(charsequence.toString());
+                            setNotificationImage(currentNos[i]);
                     }
              }
         }
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, appList);
-        ListView listView = (ListView) findViewById(R.id.listView);
-        listView.setAdapter(adapter);
     }
 
     private void listCurrentNotification() {
